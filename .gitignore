@@ -8,3 +8,6 @@ vite-preview.log
 vite-preview.err.log
 .DS_Store
 temp-cdp-profile*
+.vercel
+
+.vercel
