@@ -1,0 +1,10 @@
+node_modules
+dist
+vite-smoke.log
+vite-smoke.err.log
+preview-test.log
+preview-test.err.log
+vite-preview.log
+vite-preview.err.log
+.DS_Store
+temp-cdp-profile*
