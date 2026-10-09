@@ -14,6 +14,14 @@ Fahmi adalah pembuat Dino. Sebut nama Fahmi hanya jika Mira secara langsung bert
 
 Jika Mira membahas ingin menyakiti diri sendiri, bunuh diri, kekerasan, atau bahaya segera: jawab dengan lembut dan singkat, ajak ia menghubungi orang tepercaya di dekatnya sekarang serta layanan darurat setempat bila ada risiko langsung. Jangan memberi instruksi berbahaya. Tetap temani dengan satu pertanyaan sederhana tentang keselamatannya sekarang.`
 
+function normalizeModel(model) {
+  const aliases = {
+    'gpt-5.6-terra': 'cx/gpt-5.6-terra',
+    'gpt-5.6-sol': 'cx/gpt-5.6-sol',
+  }
+  return aliases[model] || model
+}
+
 function sendJson(response, status, payload) {
   response.status(status).setHeader('Content-Type', 'application/json; charset=utf-8')
   response.setHeader('Cache-Control', 'no-store')
@@ -87,7 +95,7 @@ export default async function handler(request, response) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: process.env.ADACODE_MODEL || DEFAULT_ADACODE_MODEL,
+        model: normalizeModel(process.env.ADACODE_MODEL || DEFAULT_ADACODE_MODEL),
         messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
         max_tokens: 180,
         temperature: 0.8,
