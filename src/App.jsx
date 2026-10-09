@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
+  Bot,
   Check,
   ChevronUp,
   Cookie,
   Gamepad2,
+  MessageCircle,
   Music2,
   Pause,
   Play,
   RotateCcw,
+  Send,
+  ShieldCheck,
   Sparkles,
   Star,
   Trophy,
@@ -22,6 +26,8 @@ const personalize = (text) => text
   .replaceAll('[NAME]', content.person.name)
   .replaceAll('[NICKNAME]', content.person.nickname)
   .replaceAll('[MY NAME]', content.creator)
+
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
@@ -156,6 +162,15 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
   const [snackMessage, setSnackMessage] = useState('Dino sedang menunggu snack dengan sopan.')
   const [moodChoice, setMoodChoice] = useState(null)
   const [factIndex, setFactIndex] = useState(null)
+  const [chatMessages, setChatMessages] = useState(() => [{
+    id: 'welcome',
+    role: 'assistant',
+    content: personalize(content.chat.welcome),
+  }])
+  const [chatInput, setChatInput] = useState('')
+  const [chatBusy, setChatBusy] = useState(false)
+  const [shareConsent, setShareConsent] = useState(false)
+  const [shareState, setShareState] = useState('idle')
   const [toast, setToast] = useState(null)
   const [musicOn, setMusicOn] = useState(false)
   const [, setLogoClicks] = useState(0)
@@ -164,6 +179,7 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
   const audioRef = useRef(initialAudio)
   const ownsAudioRef = useRef(!initialAudio)
   const toastTimer = useRef(null)
+  const chatEndRef = useRef(null)
   const dashActiveRef = useRef(false)
   const dashWinHandledRef = useRef(false)
 
@@ -224,6 +240,10 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
     const timer = window.setTimeout(() => setDinoJumping(false), 560)
     return () => window.clearTimeout(timer)
   }, [dinoJumping])
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [chatMessages, chatBusy])
 
   useEffect(() => {
     if (dashScore !== 8 || dashWinHandledRef.current) return
@@ -301,6 +321,71 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
     let next = Math.floor(Math.random() * content.facts.items.length)
     if (next === factIndex) next = (next + 1) % content.facts.items.length
     setFactIndex(next)
+  }
+
+  const sendChatMessage = async (rawMessage) => {
+    const message = rawMessage.trim()
+    if (!message || chatBusy) return
+
+    const userMessage = { id: makeId(), role: 'user', content: message }
+    const nextMessages = [...chatMessages, userMessage]
+    const context = nextMessages
+      .filter(({ role }) => role === 'user' || role === 'assistant')
+      .slice(-12)
+      .map(({ role, content: messageContent }) => ({ role, content: messageContent }))
+
+    setChatMessages(nextMessages)
+    setChatInput('')
+    setShareConsent(false)
+    setShareState('idle')
+    setChatBusy(true)
+
+    try {
+      const response = await fetch('/api/dino-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: context }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || typeof data.reply !== 'string' || !data.reply.trim()) throw new Error('chat_failed')
+      setChatMessages((current) => [...current, { id: makeId(), role: 'assistant', content: data.reply.trim() }])
+    } catch {
+      setChatMessages((current) => [...current, { id: makeId(), role: 'assistant', content: content.chat.error }])
+    } finally {
+      setChatBusy(false)
+    }
+  }
+
+  const submitChat = (event) => {
+    event.preventDefault()
+    void sendChatMessage(chatInput)
+  }
+
+  const handleChatKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      void sendChatMessage(chatInput)
+    }
+  }
+
+  const shareChat = async () => {
+    if (!shareConsent || shareState === 'sending') return
+    setShareState('sending')
+    const messages = chatMessages
+      .filter(({ role }) => role === 'user' || role === 'assistant')
+      .map(({ role, content: messageContent }) => ({ role, content: messageContent }))
+
+    try {
+      const response = await fetch('/api/share-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consent: true, messages }),
+      })
+      if (!response.ok) throw new Error('share_failed')
+      setShareState('sent')
+    } catch {
+      setShareState('error')
+    }
   }
 
   const toggleMusic = () => {
@@ -405,6 +490,21 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
           </div>
         </section>
 
+        <DinoChatSection
+          messages={chatMessages}
+          input={chatInput}
+          busy={chatBusy}
+          endRef={chatEndRef}
+          onInput={setChatInput}
+          onSubmit={submitChat}
+          onKeyDown={handleChatKeyDown}
+          onPrompt={sendChatMessage}
+          shareConsent={shareConsent}
+          shareState={shareState}
+          onShareConsent={setShareConsent}
+          onShare={shareChat}
+        />
+
         <DiscoSection />
 
         <section id="facts" className="dino-section fact-section">
@@ -445,7 +545,7 @@ function TopBar({ musicOn, onToggleMusic, onLogo }) {
     <header className="dino-topbar">
       <button className="dino-wordmark" onClick={onLogo} aria-label="Dino Break"><span className="wordmark-dot" />dino break<span className="wordmark-plus">+</span></button>
       <nav className="dino-nav" aria-label="Dino sections">
-        <a href="#dash">Dash</a><a href="#bubbles">Pop</a><a href="#snacks">Snack</a><a href="#moods">Mood</a><a href="#disco">Disco</a><a href="#facts">Facts</a>
+        <a href="#dash">Dash</a><a href="#bubbles">Pop</a><a href="#snacks">Snack</a><a href="#moods">Mood</a><a href="#curhat">Cerita</a><a href="#disco">Disco</a><a href="#facts">Facts</a>
       </nav>
       <button className="music-toggle" onClick={onToggleMusic} aria-label={musicOn ? content.music.off : content.music.on}>{musicOn ? <Pause size={14} /> : <Music2 size={14} />}<span>{content.music.label}</span></button>
     </header>
@@ -669,6 +769,62 @@ function BubblePopSection() {
             {complete && <button ref={replayRef} className="button button-primary" onClick={reset}><RotateCcw size={15} /> {content.bubbles.replay}</button>}
           </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onKeyDown, onPrompt, shareConsent, shareState, onShareConsent, onShare }) {
+  const reducedMotion = useReducedMotion()
+
+  return (
+    <section id="curhat" className="dino-section chat-section">
+      <div className="section-inner chat-layout">
+        <motion.div className="chat-intro" initial="hidden" whileInView="visible" viewport={viewport} variants={fadeUp}>
+          <SectionIntro eyebrow={content.chat.kicker} title={content.chat.title} intro={content.chat.intro} />
+          <div className="chat-companion-card">
+            <div className="chat-companion-top"><span>LIVE LISTENER</span><span className="chat-online"><i /> {content.chat.status}</span></div>
+            <div className="chat-companion-dino"><DinoSvg mood={busy ? 2 : 3} celebrate={busy} /></div>
+            <div className="chat-companion-bubble">{busy ? content.chat.thinking : 'Dino tidak punya jawaban untuk semua hal. Tapi dia punya waktu.'}</div>
+            <div className="chat-tags"><span>no judgment</span><span>jawaban pendek</span><span>snack break</span></div>
+          </div>
+        </motion.div>
+
+        <motion.div className="chat-card" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewport} transition={{ duration: reducedMotion ? 0 : .65 }}>
+          <div className="chat-card-header">
+            <div className="chat-card-title"><span className="chat-avatar"><Bot size={17} /></span><div><strong>{content.chat.name}</strong><span><i /> {content.chat.status}</span></div></div>
+            <MessageCircle size={20} className="chat-header-icon" />
+          </div>
+          <div className="chat-transcript" role="log" aria-live="polite" aria-label="Percakapan dengan Dino">
+            <AnimatePresence initial={false}>
+              {messages.map((message) => (
+                <motion.div key={message.id} className={`chat-row chat-row-${message.role}`} initial={{ opacity: 0, y: 9, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reducedMotion ? 0 : .22 }}>
+                  <div className="chat-bubble"><span>{message.content}</span></div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {busy && (
+              <motion.div className="chat-row chat-row-assistant" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="chat-bubble chat-typing" aria-label={content.chat.thinking}><i /><i /><i /></div>
+              </motion.div>
+            )}
+            <div ref={endRef} />
+          </div>
+          <div className="chat-prompts"><span>COBA MULAI DARI:</span>{content.chat.prompts.map((prompt) => <button key={prompt} type="button" onClick={() => onPrompt(prompt)} disabled={busy}>{prompt}</button>)}</div>
+          <form className="chat-composer" onSubmit={onSubmit}>
+            <textarea value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={onKeyDown} maxLength={800} rows={2} placeholder={content.chat.placeholder} aria-label={content.chat.placeholder} disabled={busy} />
+            <button className="chat-send" type="submit" disabled={busy || !input.trim()} aria-label={content.chat.send}><Send size={17} /></button>
+          </form>
+          <div className="chat-privacy"><ShieldCheck size={14} /><span>{content.chat.privacy}</span></div>
+          <small className="chat-disclaimer">{content.chat.disclaimer}</small>
+          <div className="chat-share-box">
+            <div className="chat-share-copy"><strong>Kirim ke Fahmi?</strong><span>Kalau Mira mau, percakapan ini bisa dibagikan lewat Telegram. Tidak ada yang terkirim tanpa centang dan tombol di bawah.</span></div>
+            <label className="chat-consent"><input type="checkbox" checked={shareConsent} onChange={(event) => onShareConsent(event.target.checked)} disabled={busy || shareState === 'sending' || shareState === 'sent'} /><span>Aku setuju membagikan percakapan ini ke Fahmi.</span></label>
+            <button className="button button-outline chat-share-button" type="button" onClick={onShare} disabled={!shareConsent || busy || shareState === 'sending' || shareState === 'sent'}>{shareState === 'sending' ? 'Mengirim...' : shareState === 'sent' ? 'Sudah terkirim' : 'Kirim ke Fahmi'}</button>
+            {shareState === 'error' && <small className="chat-share-status is-error">Dino gagal mengirim. Coba lagi nanti.</small>}
+            {shareState === 'sent' && <small className="chat-share-status is-success">Sudah dikirim setelah persetujuan Mira.</small>}
+          </div>
+        </motion.div>
       </div>
     </section>
   )

@@ -6,8 +6,10 @@ preview-test.log
 preview-test.err.log
 vite-preview.log
 vite-preview.err.log
+vite-chat.log
+vite-chat.err.log
 .DS_Store
 temp-cdp-profile*
 .vercel
-
-.vercel
+.env
+.env.local
