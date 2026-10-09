@@ -62,31 +62,31 @@ Use the Bubble Break `Isi gelembung lagi` button after all bubbles are popped to
 - Dino Dengerin: concise AI companion chat with per-tab history
 - Dino Disco with selectable Wiggle, Muter, and Zoomies dance moves
 - Random dino fact machine
-- Optional, visible-consent Telegram sharing for Mira's conversation (off by default)
 - Original playful `dino-daydream.wav` background loop starts after the opening click and can be muted with the Music button
 - Three easter eggs: five logo clicks, the `dino` keyboard sequence, and a hidden star
 - Responsive mobile layout and reduced-motion fallback
 
-## Deploy to Vercel
+## Run the private AI chat locally
 
-1. Push the folder to GitHub.
-2. Import the repository in Vercel.
-3. Use the detected Vite settings, or set:
-   - Build command: `npm run build`
-   - Output directory: `dist`
-4. In **Project Settings > Environment Variables**, add `ADACODE_API_KEY` with your adaCODE API key. Optionally set `ADACODE_MODEL` (defaults to `adacode-2.5-flash`). Apply both to Production, Preview, and Development as needed.
-5. If you enable the optional share action, also add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Deploy. The serverless endpoints keep secrets on Vercel; never put them in `src/` or commit a real `.env` file.
-
-### Dino chat environment
-
-Copy [`.env.example`](.env.example) to `.env.local` for local Vercel development, then supply your own values:
+The Dino chat is configured for a local 9Router-compatible endpoint so conversations stay on the machine running 9Router. Copy [`.env.example`](.env.example) to `.env.local`, then fill in a newly rotated key locally:
 
 ```bash
-ADACODE_API_KEY=your_key_here
-ADACODE_MODEL=adacode-2.5-flash
+ADACODE_BASE_URL=http://localhost:20128/v1
+ADACODE_API_KEY=your_rotated_9router_key
+ADACODE_MODEL=cx/gpt-5.6-terra
 ```
 
-The chat API accepts short, in-page conversation history and returns only a Dino reply. It does not persist or forward conversations. The optional `/api/share-chat` endpoint sends a conversation to Telegram only when the UI shows a visible consent checkbox/button and submits `consent: true`; it is never called in the background. Keep that action clear to Mira and do not silently monitor or share her messages.
+Run the Vercel development server so the `/api/dino-chat` function is available:
+
+```bash
+npm.cmd exec --yes --package=vercel@63.1.0 -- vercel dev
+```
+
+The chat API accepts short, in-page history and returns only a Dino reply. It does not persist, forward, or send conversations anywhere else. A normal `npm.cmd run dev` serves the static UI but does not run the Vercel function.
+
+## Deploy the static experience
+
+The production URL is `https://special-for-mira.vercel.app/`. Vercel cannot reach `localhost` on your computer, so the deployed page intentionally cannot use your private 9Router endpoint. To use AI online, you would need a deliberately exposed, secured OpenAI-compatible endpoint and a new Vercel environment configuration; keep the local setup if privacy is the priority.
 
 The same build can be hosted on Netlify or GitHub Pages. `vite.config.js` uses a relative base for static hosting.
 

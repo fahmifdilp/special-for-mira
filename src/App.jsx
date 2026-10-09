@@ -169,8 +169,6 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
   }])
   const [chatInput, setChatInput] = useState('')
   const [chatBusy, setChatBusy] = useState(false)
-  const [shareConsent, setShareConsent] = useState(false)
-  const [shareState, setShareState] = useState('idle')
   const [toast, setToast] = useState(null)
   const [musicOn, setMusicOn] = useState(false)
   const [, setLogoClicks] = useState(0)
@@ -336,8 +334,6 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
 
     setChatMessages(nextMessages)
     setChatInput('')
-    setShareConsent(false)
-    setShareState('idle')
     setChatBusy(true)
 
     try {
@@ -365,26 +361,6 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       void sendChatMessage(chatInput)
-    }
-  }
-
-  const shareChat = async () => {
-    if (!shareConsent || shareState === 'sending') return
-    setShareState('sending')
-    const messages = chatMessages
-      .filter(({ role }) => role === 'user' || role === 'assistant')
-      .map(({ role, content: messageContent }) => ({ role, content: messageContent }))
-
-    try {
-      const response = await fetch('/api/share-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent: true, messages }),
-      })
-      if (!response.ok) throw new Error('share_failed')
-      setShareState('sent')
-    } catch {
-      setShareState('error')
     }
   }
 
@@ -499,10 +475,6 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
           onSubmit={submitChat}
           onKeyDown={handleChatKeyDown}
           onPrompt={sendChatMessage}
-          shareConsent={shareConsent}
-          shareState={shareState}
-          onShareConsent={setShareConsent}
-          onShare={shareChat}
         />
 
         <DiscoSection />
@@ -774,9 +746,8 @@ function BubblePopSection() {
   )
 }
 
-function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onKeyDown, onPrompt, shareConsent, shareState, onShareConsent, onShare }) {
+function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onKeyDown, onPrompt }) {
   const reducedMotion = useReducedMotion()
-  const hasUserMessages = messages.some((message) => message.role === 'user')
 
   return (
     <section id="curhat" className="dino-section chat-section">
@@ -818,13 +789,6 @@ function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onK
           </form>
           <div className="chat-privacy"><ShieldCheck size={14} /><span>{content.chat.privacy}</span></div>
           <small className="chat-disclaimer">{content.chat.disclaimer}</small>
-          <div className="chat-share-box">
-            <div className="chat-share-copy"><strong>Kirim ke Fahmi?</strong><span>Kalau Mira mau, percakapan ini bisa dibagikan lewat Telegram. Tidak ada yang terkirim tanpa centang dan tombol di bawah.</span></div>
-            <label className="chat-consent"><input type="checkbox" checked={shareConsent} onChange={(event) => onShareConsent(event.target.checked)} disabled={busy || shareState === 'sending' || shareState === 'sent'} /><span>Aku setuju membagikan percakapan ini ke Fahmi.</span></label>
-            <button className="button button-outline chat-share-button" type="button" onClick={onShare} disabled={!hasUserMessages || !shareConsent || busy || shareState === 'sending' || shareState === 'sent'}>{shareState === 'sending' ? 'Mengirim...' : shareState === 'sent' ? 'Sudah terkirim' : 'Kirim ke Fahmi'}</button>
-            {shareState === 'error' && <small className="chat-share-status is-error">Dino gagal mengirim. Coba lagi nanti.</small>}
-            {shareState === 'sent' && <small className="chat-share-status is-success">Sudah dikirim setelah persetujuan Mira.</small>}
-          </div>
         </motion.div>
       </div>
     </section>

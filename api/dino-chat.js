@@ -1,6 +1,7 @@
 /* global process */
 
-const ADACODE_CHAT_URL = 'https://api.adacode.ai/v1/chat/completions'
+const DEFAULT_ADACODE_BASE_URL = 'http://localhost:20128/v1'
+const DEFAULT_ADACODE_MODEL = 'cx/gpt-5.6-terra'
 const MAX_MESSAGES = 12
 const MAX_MESSAGE_LENGTH = 800
 const MAX_TOTAL_LENGTH = 5000
@@ -74,18 +75,19 @@ export default async function handler(request, response) {
 
   const apiKey = process.env.ADACODE_API_KEY
   if (!apiKey) {
-    return sendJson(response, 503, { error: 'Dino lagi belum siap ngobrol. Coba sebentar lagi ya.' })
+    return sendJson(response, 503, { error: 'Dino belum terhubung ke 9Router lokal.' })
   }
 
   try {
-    const upstream = await fetch(ADACODE_CHAT_URL, {
+    const baseUrl = (process.env.ADACODE_BASE_URL || DEFAULT_ADACODE_BASE_URL).replace(/\/+$/, '')
+    const upstream = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: process.env.ADACODE_MODEL || 'adacode-2.5-flash',
+        model: process.env.ADACODE_MODEL || DEFAULT_ADACODE_MODEL,
         messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
         max_tokens: 180,
         temperature: 0.8,

@@ -127,7 +127,7 @@ export const content = {
     send: 'Kirim',
     thinking: 'Dino lagi nyusun kata...',
     error: 'Sinyal Dino lagi ngambek. Coba kirim lagi sebentar, ya.',
-    privacy: 'Riwayat tampil selama halaman ini terbuka dan akan mulai lagi dari awal setelah reload. Pesan dikirim ke layanan AI hanya untuk membuat balasan.',
+    privacy: 'Riwayat tampil selama halaman ini terbuka dan akan mulai lagi dari awal setelah reload. Pesan hanya dipakai layanan AI untuk membuat balasan dan tidak diteruskan ke siapa pun.',
     disclaimer: 'Dino teman cerita, bukan pengganti bantuan profesional.',
     prompts: [
       'Aku capek banget hari ini.',
