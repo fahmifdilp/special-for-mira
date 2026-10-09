@@ -776,6 +776,7 @@ function BubblePopSection() {
 
 function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onKeyDown, onPrompt, shareConsent, shareState, onShareConsent, onShare }) {
   const reducedMotion = useReducedMotion()
+  const hasUserMessages = messages.some((message) => message.role === 'user')
 
   return (
     <section id="curhat" className="dino-section chat-section">
@@ -820,7 +821,7 @@ function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onK
           <div className="chat-share-box">
             <div className="chat-share-copy"><strong>Kirim ke Fahmi?</strong><span>Kalau Mira mau, percakapan ini bisa dibagikan lewat Telegram. Tidak ada yang terkirim tanpa centang dan tombol di bawah.</span></div>
             <label className="chat-consent"><input type="checkbox" checked={shareConsent} onChange={(event) => onShareConsent(event.target.checked)} disabled={busy || shareState === 'sending' || shareState === 'sent'} /><span>Aku setuju membagikan percakapan ini ke Fahmi.</span></label>
-            <button className="button button-outline chat-share-button" type="button" onClick={onShare} disabled={!shareConsent || busy || shareState === 'sending' || shareState === 'sent'}>{shareState === 'sending' ? 'Mengirim...' : shareState === 'sent' ? 'Sudah terkirim' : 'Kirim ke Fahmi'}</button>
+            <button className="button button-outline chat-share-button" type="button" onClick={onShare} disabled={!hasUserMessages || !shareConsent || busy || shareState === 'sending' || shareState === 'sent'}>{shareState === 'sending' ? 'Mengirim...' : shareState === 'sent' ? 'Sudah terkirim' : 'Kirim ke Fahmi'}</button>
             {shareState === 'error' && <small className="chat-share-status is-error">Dino gagal mengirim. Coba lagi nanti.</small>}
             {shareState === 'sent' && <small className="chat-share-status is-success">Sudah dikirim setelah persetujuan Mira.</small>}
           </div>
