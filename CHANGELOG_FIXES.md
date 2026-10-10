@@ -1,3 +1,17 @@
+### Fix #6 - Dino Chat Production Configuration
+
+| Field | Detail |
+| --- | --- |
+| Tanggal | 2026-10-10 |
+| File | `api/dino-chat.js`, Vercel Production environment, `handoffs/dino-chat-deploy.md` |
+| Masalah | Endpoint Dino di production sebelumnya mengembalikan `503` karena kredensial belum tersedia di Vercel dan 9Router lokal tidak dapat dijangkau dari cloud. |
+| Akar | Environment variable Production belum dikonfigurasi; endpoint `localhost` hanya berlaku di komputer pengembang. |
+| Fix | Pemilik project menambahkan `ADACODE_API_KEY`, `ADACODE_BASE_URL`, dan `ADACODE_MODEL` sebagai environment variable Production tanpa mencatat nilainya; deployment production dibuat ulang. |
+| Verifikasi | Deployment `dpl_hEpJxd2KxbkZbq2LupnYd61JQJqm` berstatus `READY`; `POST /api/dino-chat` production mengembalikan `HTTP 200` dan balasan Dino (panjang 58 karakter); `npm.cmd run lint` dan `npm.cmd run build` lulus. |
+| Pelajaran | Environment variable baru berlaku pada deployment berikutnya; endpoint cloud harus dipakai untuk fungsi server Vercel, bukan `localhost`. |
+| Log Keyword | `dino-chat-deploy`, `vercel-production-env`, `api-dino-chat-200`, `special-for-mira` |
+| Deploy | ✅ LIVE 2026-10-10 — `https://special-for-mira.vercel.app/` |
+
 ### Fix #5 - Musik Latar Otomatis Loop Setelah Masuk
 
 | Field | Detail |
