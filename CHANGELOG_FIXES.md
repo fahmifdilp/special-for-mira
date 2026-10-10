@@ -1,3 +1,17 @@
+### Fix #7 - Pembuka Selalu Kembali ke Bagian Atas
+
+| Field | Detail |
+| --- | --- |
+| Tanggal | 2026-10-10 |
+| File | `src/App.jsx` |
+| Masalah | Setelah menekan **Mulai main**, halaman dapat melompat langsung ke section Dino AI, bukan mulai dari hero paling atas. |
+| Akar | Effect riwayat chat memanggil `scrollIntoView()` pada elemen akhir percakapan saat `DinoExperience` pertama kali mount; browser ikut menggulir seluruh halaman ke section chat. |
+| Fix | Auto-scroll chat diarahkan ke container `.chat-transcript` saja, lalu pembuka menjadwalkan reset `window.scrollTo({ top: 0 })` setelah render pengalaman. |
+| Verifikasi | `npm.cmd run lint` lulus; `npm.cmd run build` lulus dengan 1.929 module; tidak ada perubahan pada endpoint atau nilai secret. |
+| Pelajaran | Untuk chat yang berada di halaman panjang, gulir container internal, bukan elemen sentinel dengan `scrollIntoView()` global. |
+| Log Keyword | `start-scroll`, `opening-top`, `chat-transcript-scroll`, `dino-ai-jump`, `special-for-mira` |
+| Deploy | PENDING — menunggu deployment production dan smoke-test. |
+
 ### Fix #6 - Dino Chat Production Configuration
 
 | Field | Detail |

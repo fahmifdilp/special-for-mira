@@ -87,12 +87,14 @@ function App() {
   const musicStartRef = useRef(null)
 
   const startExperience = () => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
     const audio = createBackgroundMusic()
     musicRef.current = audio
     musicStartRef.current = audio.play()
     musicStartRef.current.catch(() => {})
     playOpeningSound()
     setStarted(true)
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }))
   }
 
   if (!started) return <OpeningScreen onStart={startExperience} />
@@ -178,6 +180,7 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
   const ownsAudioRef = useRef(!initialAudio)
   const toastTimer = useRef(null)
   const chatEndRef = useRef(null)
+  const chatTranscriptRef = useRef(null)
   const dashActiveRef = useRef(false)
   const dashWinHandledRef = useRef(false)
 
@@ -240,7 +243,9 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
   }, [dinoJumping])
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    const transcript = chatTranscriptRef.current
+    if (!transcript) return
+    transcript.scrollTo({ top: transcript.scrollHeight, behavior: 'smooth' })
   }, [chatMessages, chatBusy])
 
   useEffect(() => {
@@ -471,6 +476,7 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
           input={chatInput}
           busy={chatBusy}
           endRef={chatEndRef}
+          transcriptRef={chatTranscriptRef}
           onInput={setChatInput}
           onSubmit={submitChat}
           onKeyDown={handleChatKeyDown}
@@ -746,7 +752,7 @@ function BubblePopSection() {
   )
 }
 
-function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onKeyDown, onPrompt }) {
+function DinoChatSection({ messages, input, busy, endRef, transcriptRef, onInput, onSubmit, onKeyDown, onPrompt }) {
   const reducedMotion = useReducedMotion()
 
   return (
@@ -767,7 +773,7 @@ function DinoChatSection({ messages, input, busy, endRef, onInput, onSubmit, onK
             <div className="chat-card-title"><span className="chat-avatar"><Bot size={17} /></span><div><strong>{content.chat.name}</strong><span><i /> {content.chat.status}</span></div></div>
             <MessageCircle size={20} className="chat-header-icon" />
           </div>
-          <div className="chat-transcript" role="log" aria-live="polite" aria-label="Percakapan dengan Dino">
+          <div ref={transcriptRef} className="chat-transcript" role="log" aria-live="polite" aria-label="Percakapan dengan Dino">
             <AnimatePresence initial={false}>
               {messages.map((message) => (
                 <motion.div key={message.id} className={`chat-row chat-row-${message.role}`} initial={{ opacity: 0, y: 9, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reducedMotion ? 0 : .22 }}>
