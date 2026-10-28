@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
   Bot,
+  Bone,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Cookie,
   Gamepad2,
+  Heart,
   MessageCircle,
   Music2,
   Pause,
@@ -35,6 +39,20 @@ const fadeUp = {
 }
 
 const viewport = { once: true, amount: 0.2 }
+
+const FOSSIL_TARGET = 8
+const FOSSIL_MAX_HEARTS = 3
+const FOSSIL_WAVES = [
+  [{ lane: 0, type: 'fossil' }, { lane: 2, type: 'cactus' }],
+  [{ lane: 1, type: 'fossil' }, { lane: 0, type: 'cactus' }],
+  [{ lane: 2, type: 'fossil' }, { lane: 1, type: 'cactus' }],
+  [{ lane: 0, type: 'snack' }, { lane: 2, type: 'cactus' }],
+  [{ lane: 1, type: 'fossil' }, { lane: 2, type: 'cactus' }],
+  [{ lane: 2, type: 'fossil' }, { lane: 0, type: 'cactus' }],
+  [{ lane: 0, type: 'fossil' }, { lane: 1, type: 'cactus' }],
+  [{ lane: 2, type: 'snack' }, { lane: 1, type: 'cactus' }],
+  [{ lane: 1, type: 'fossil' }, { lane: 0, type: 'cactus' }],
+]
 
 function playOpeningSound() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext
@@ -439,6 +457,8 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
 
         <BubblePopSection />
 
+        <FossilRunSection />
+
         <section id="snacks" className="dino-section snack-section">
           <div className="section-inner split-section">
             <SectionIntro eyebrow={content.snacks.kicker} title={content.snacks.title} intro={content.snacks.intro} />
@@ -523,7 +543,7 @@ function TopBar({ musicOn, onToggleMusic, onLogo }) {
     <header className="dino-topbar">
       <button className="dino-wordmark" onClick={onLogo} aria-label="Dino Break"><span className="wordmark-dot" />dino break<span className="wordmark-plus">+</span></button>
       <nav className="dino-nav" aria-label="Dino sections">
-        <a href="#dash">Dash</a><a href="#bubbles">Pop</a><a href="#snacks">Snack</a><a href="#moods">Mood</a><a href="#curhat">Cerita</a><a href="#disco">Disco</a><a href="#facts">Facts</a>
+        <a href="#dash">Dash</a><a href="#bubbles">Pop</a><a href="#fossil-run">Fosil</a><a href="#snacks">Snack</a><a href="#moods">Mood</a><a href="#curhat">Cerita</a><a href="#disco">Disco</a><a href="#facts">Facts</a>
       </nav>
       <button className="music-toggle" onClick={onToggleMusic} aria-label={musicOn ? content.music.off : content.music.on}>{musicOn ? <Pause size={14} /> : <Music2 size={14} />}<span>{content.music.label}</span></button>
     </header>
@@ -746,6 +766,255 @@ function BubblePopSection() {
             <p>{message}</p>
             {complete && <button ref={replayRef} className="button button-primary" onClick={reset}><RotateCcw size={15} /> {content.bubbles.replay}</button>}
           </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FossilRunSection() {
+  const [phase, setPhase] = useState('idle')
+  const [lane, setLane] = useState(1)
+  const [fossils, setFossils] = useState(0)
+  const [hearts, setHearts] = useState(FOSSIL_MAX_HEARTS)
+  const [waveIndex, setWaveIndex] = useState(0)
+  const [runId, setRunId] = useState(0)
+  const [status, setStatus] = useState(content.fossilRun.idle)
+  const [feedback, setFeedback] = useState(null)
+  const reducedMotion = useReducedMotion()
+  const sectionRef = useRef(null)
+  const laneRef = useRef(1)
+  const fossilsRef = useRef(0)
+  const heartsRef = useRef(FOSSIL_MAX_HEARTS)
+  const phaseRef = useRef('idle')
+  const pointerStartRef = useRef(null)
+  const feedbackTimerRef = useRef(null)
+
+  const flashFeedback = useCallback((text, tone) => {
+    window.clearTimeout(feedbackTimerRef.current)
+    setFeedback({ text, tone })
+    feedbackTimerRef.current = window.setTimeout(() => setFeedback(null), 650)
+  }, [])
+
+  const setPlayerLane = useCallback((nextLane) => {
+    if (phaseRef.current !== 'running') return
+    const safeLane = Math.max(0, Math.min(2, nextLane))
+    laneRef.current = safeLane
+    setLane(safeLane)
+  }, [])
+
+  const movePlayer = useCallback((direction) => {
+    if (phaseRef.current !== 'running') return
+    setPlayerLane(laneRef.current + direction)
+  }, [setPlayerLane])
+
+  const startRun = useCallback(() => {
+    window.clearTimeout(feedbackTimerRef.current)
+    laneRef.current = 1
+    fossilsRef.current = 0
+    heartsRef.current = FOSSIL_MAX_HEARTS
+    phaseRef.current = 'running'
+    setLane(1)
+    setFossils(0)
+    setHearts(FOSSIL_MAX_HEARTS)
+    setWaveIndex(0)
+    setFeedback(null)
+    setStatus(content.fossilRun.instruction)
+    setRunId((value) => value + 1)
+    setPhase('running')
+    window.requestAnimationFrame(() => sectionRef.current?.focus({ preventScroll: true }))
+  }, [])
+
+  const resolveWave = useCallback((resolvedWaveIndex) => {
+    if (phaseRef.current !== 'running') return
+    const wave = FOSSIL_WAVES[resolvedWaveIndex % FOSSIL_WAVES.length]
+    const item = wave.find(({ lane: itemLane }) => itemLane === laneRef.current)
+
+    if (!item) {
+      setStatus(content.fossilRun.emptyLane)
+      flashFeedback(content.fossilRun.emptyLane, 'neutral')
+      setWaveIndex((value) => value + 1)
+      return
+    }
+
+    if (item.type === 'fossil') {
+      const nextFossils = Math.min(FOSSIL_TARGET, fossilsRef.current + 1)
+      fossilsRef.current = nextFossils
+      setFossils(nextFossils)
+      setStatus(content.fossilRun.fossilCaught)
+      flashFeedback(content.fossilRun.fossilCaught, 'good')
+
+      if (nextFossils >= FOSSIL_TARGET) {
+        phaseRef.current = 'won'
+        setPhase('won')
+        setStatus(content.fossilRun.win)
+        return
+      }
+    } else if (item.type === 'snack') {
+      const nextHearts = Math.min(FOSSIL_MAX_HEARTS, heartsRef.current + 1)
+      heartsRef.current = nextHearts
+      setHearts(nextHearts)
+      setStatus(content.fossilRun.snackCaught)
+      flashFeedback(content.fossilRun.snackCaught, 'good')
+    } else {
+      const nextHearts = Math.max(0, heartsRef.current - 1)
+      heartsRef.current = nextHearts
+      setHearts(nextHearts)
+      setStatus(content.fossilRun.cactusHit)
+      flashFeedback(content.fossilRun.cactusHit, 'hit')
+
+      if (nextHearts === 0) {
+        phaseRef.current = 'lost'
+        setPhase('lost')
+        setStatus(content.fossilRun.gameOver)
+        return
+      }
+    }
+
+    setWaveIndex((value) => value + 1)
+  }, [flashFeedback])
+
+  const waveDuration = Math.max(900, 1750 - fossils * 70)
+  const currentWave = FOSSIL_WAVES[waveIndex % FOSSIL_WAVES.length]
+
+  useEffect(() => {
+    if (phase !== 'running') return undefined
+    const timer = window.setTimeout(() => resolveWave(waveIndex), waveDuration)
+    return () => window.clearTimeout(timer)
+  }, [phase, resolveWave, runId, waveDuration, waveIndex])
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (phaseRef.current !== 'running' || event.repeat) return
+      const target = event.target
+      if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return
+
+      if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
+        event.preventDefault()
+        movePlayer(-1)
+      } else if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
+        event.preventDefault()
+        movePlayer(1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [movePlayer])
+
+  useEffect(() => () => window.clearTimeout(feedbackTimerRef.current), [])
+
+  const handlePointerDown = (event) => {
+    if (phaseRef.current !== 'running') return
+    pointerStartRef.current = { x: event.clientX, y: event.clientY }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const handlePointerUp = (event) => {
+    const start = pointerStartRef.current
+    pointerStartRef.current = null
+    if (!start || phaseRef.current !== 'running') return
+
+    const deltaX = event.clientX - start.x
+    const deltaY = event.clientY - start.y
+    if (Math.abs(deltaX) > 32 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      movePlayer(deltaX > 0 ? 1 : -1)
+      return
+    }
+
+    if (Math.abs(deltaX) < 12 && Math.abs(deltaY) < 12) {
+      const bounds = event.currentTarget.getBoundingClientRect()
+      const tappedLane = Math.min(2, Math.floor(((event.clientX - bounds.left) / bounds.width) * 3))
+      setPlayerLane(tappedLane)
+    }
+  }
+
+  const overlayTitle = phase === 'won'
+    ? content.fossilRun.win
+    : phase === 'lost'
+      ? content.fossilRun.gameOver
+      : content.fossilRun.idle
+
+  return (
+    <section ref={sectionRef} id="fossil-run" className="dino-section fossil-section" tabIndex={-1}>
+      <div className="section-inner fossil-layout">
+        <motion.div initial="hidden" whileInView="visible" viewport={viewport} variants={fadeUp}>
+          <SectionIntro eyebrow={content.fossilRun.kicker} title={content.fossilRun.title} intro={content.fossilRun.intro} />
+          <small className="fossil-hint">{content.fossilRun.hint}</small>
+        </motion.div>
+
+        <div className={`fossil-game playful-card ${feedback?.tone === 'hit' ? 'is-hit' : ''}`}>
+          <div className="fossil-hud">
+            <span className="fossil-stat">{content.fossilRun.score.replace('{count}', fossils).replace('{total}', FOSSIL_TARGET)}</span>
+            <div className="fossil-progress" aria-hidden="true"><span style={{ width: `${(fossils / FOSSIL_TARGET) * 100}%` }} /></div>
+            <div className="fossil-hearts" aria-label={`${content.fossilRun.heartsLabel}: ${hearts} dari ${FOSSIL_MAX_HEARTS}`}>
+              {Array.from({ length: FOSSIL_MAX_HEARTS }, (_, index) => <Heart key={index} size={17} fill={index < hearts ? 'currentColor' : 'none'} opacity={index < hearts ? 1 : .3} />)}
+            </div>
+          </div>
+
+          <div
+            className="fossil-arena"
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={() => { pointerStartRef.current = null }}
+            aria-label={content.fossilRun.instruction}
+          >
+            <div className="fossil-lanes" aria-hidden="true"><span /><span /><span /></div>
+
+            {phase === 'running' && (
+              <motion.div
+                key={`${runId}-${waveIndex}`}
+                className="fossil-wave"
+                initial={{ y: '-7%' }}
+                animate={{ y: '70%' }}
+                transition={{ duration: waveDuration / 1000, ease: reducedMotion ? 'linear' : [0.22, 0.7, 0.32, 1] }}
+              >
+                {currentWave.map((item) => (
+                  <div
+                    key={`${item.lane}-${item.type}`}
+                    className={`fossil-item fossil-item-${item.type}`}
+                    style={{ left: `${(item.lane + .5) * 33.333}%` }}
+                    aria-label={content.fossilRun.items[item.type]}
+                  >
+                    {item.type === 'fossil' && <Bone size={30} />}
+                    {item.type === 'snack' && <Cookie size={29} />}
+                    {item.type === 'cactus' && <span className="fossil-cactus-shape"><i /></span>}
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            <motion.div
+              className="fossil-player"
+              style={{ left: `${(lane + .5) * 33.333}%` }}
+              animate={feedback?.tone === 'hit' ? { rotate: [0, -7, 7, 0], scale: [1, .94, 1] } : { rotate: 0, scale: 1 }}
+              transition={{ duration: .3 }}
+            >
+              <DinoSvg mood={phase === 'won' ? 4 : feedback?.tone === 'hit' ? 2 : 0} celebrate={phase === 'won'} />
+            </motion.div>
+
+            <AnimatePresence>
+              {feedback && <motion.div className={`fossil-feedback fossil-feedback-${feedback.tone}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{feedback.text}</motion.div>}
+            </AnimatePresence>
+
+            {phase !== 'running' && (
+              <div className="fossil-overlay">
+                {phase === 'won' ? <Trophy size={27} /> : <Gamepad2 size={27} />}
+                <strong>{overlayTitle}</strong>
+                <p>{content.fossilRun.instruction}</p>
+                <button className="button button-primary" onClick={startRun}>{phase === 'idle' ? content.fossilRun.start : content.fossilRun.retry}<ArrowRight size={16} /></button>
+              </div>
+            )}
+          </div>
+
+          <div className="fossil-controls">
+            <div className="fossil-steer">
+              <button type="button" className="fossil-control-button" onClick={() => movePlayer(-1)} disabled={phase !== 'running'} aria-label="Geser Dino ke kiri"><ChevronLeft size={25} /></button>
+              <button type="button" className="fossil-control-button" onClick={() => movePlayer(1)} disabled={phase !== 'running'} aria-label="Geser Dino ke kanan"><ChevronRight size={25} /></button>
+            </div>
+            <button type="button" className="button button-outline" onClick={startRun}>{phase === 'running' ? 'Ulang dari awal' : phase === 'idle' ? content.fossilRun.start : content.fossilRun.retry}<RotateCcw size={15} /></button>
+          </div>
+          <p className="fossil-status" aria-live="polite">{status}</p>
         </div>
       </div>
     </section>

@@ -57,6 +57,7 @@ Use the Bubble Break `Isi gelembung lagi` button after all bubbles are popped to
 - Tap-the-dino reactions and status changes
 - Dino Dash: a small jump game with score and win state
 - Bubble Break / Pop the Stress: pop floating bubbles to clear a few tiny worries
+- Fossil Run: a three-lane runner with keyboard, tap, swipe, fossils, snacks, cacti, and three chances
 - Snack Station: feed the dino five times
 - Mood cards with funny responses
 - Dino Dengerin: concise AI companion chat with per-tab history

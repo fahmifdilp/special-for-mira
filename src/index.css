@@ -182,6 +182,49 @@ img { display: block; max-width: 100%; }
 .bubble-result p { max-width: 720px; margin: 0; color: var(--muted); font-family: var(--serif); font-size: clamp(19px, 2.3vw, 27px); font-weight: 600; line-height: 1.05; }
 .bubble-result .button { flex: 0 0 auto; }
 
+.fossil-section { overflow: hidden; background: radial-gradient(circle at 90% 15%, rgba(255,215,107,.38), transparent 25%), linear-gradient(155deg, #f1f7df, #fff8e9 48%, #f4edff); }
+.fossil-layout { display: grid; grid-template-columns: .78fr 1.22fr; gap: clamp(35px, 7vw, 100px); align-items: center; }
+.fossil-game { position: relative; overflow: hidden; padding: clamp(18px, 3vw, 30px); background: rgba(255,253,247,.88); }
+.fossil-game::before { position: absolute; inset: 0; pointer-events: none; content: ''; opacity: .35; background-image: radial-gradient(circle, rgba(88,116,76,.2) 1.5px, transparent 1.5px); background-size: 25px 25px; mask-image: linear-gradient(to bottom, #000, transparent 45%); }
+.fossil-hud { position: relative; z-index: 2; display: grid; grid-template-columns: auto minmax(150px, 1fr) auto; align-items: center; gap: 15px; margin-bottom: 16px; }
+.fossil-stat { color: #617d48; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.fossil-progress { height: 13px; overflow: hidden; border: 2px solid var(--ink); border-radius: 999px; background: rgba(255,255,255,.8); }
+.fossil-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #a9e8c9, #ffd76b); transition: width .3s ease; }
+.fossil-hearts { display: inline-flex; align-items: center; gap: 5px; color: var(--coral); font-size: 16px; letter-spacing: .05em; }
+.fossil-arena { --fossil-lane-line: rgba(72,89,61,.18); --run-duration: 4s; position: relative; min-height: 490px; height: clamp(400px, 48vw, 540px); overflow: hidden; isolation: isolate; border: 2px solid #4b5541; border-radius: 21px; background: linear-gradient(180deg, rgba(192,225,241,.85), rgba(255,249,217,.8) 60%, #e2efc8); touch-action: pan-y; }
+.fossil-arena::before { position: absolute; inset: 0; z-index: 0; pointer-events: none; content: ''; opacity: .55; background: repeating-linear-gradient(90deg, transparent 0 calc(33.333% - 1px), var(--fossil-lane-line) calc(33.333% - 1px) 33.333%); }
+.fossil-arena::after { position: absolute; right: -12%; bottom: -80px; left: -12%; z-index: 0; height: 170px; border: 2px solid rgba(75,85,65,.13); border-radius: 50% 50% 0 0; content: ''; background: rgba(157,205,128,.58); }
+.fossil-lanes { position: absolute; inset: 0; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
+.fossil-lanes > span { border-right: 1px dashed rgba(72,89,61,.17); }
+.fossil-lanes > span:last-child { border-right: 0; }
+.fossil-wave { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.fossil-item { position: absolute; top: var(--item-y, 0%); z-index: 2; display: grid; place-items: center; width: clamp(43px, 7vw, 64px); aspect-ratio: 1; border: 2px solid rgba(41,37,61,.78); border-radius: 18px; box-shadow: 4px 5px 0 rgba(41,37,61,.13), inset 3px 3px 0 rgba(255,255,255,.45); font-size: clamp(23px, 4vw, 34px); line-height: 1; transform: translateX(-50%); }
+.fossil-item-fossil { border-radius: 50%; color: #453426; background: #e7bd79; }
+.fossil-item-cactus { color: #315c41; background: #a9e8c9; }
+.fossil-item-snack { border-radius: 50% 50% 18px 18px; background: #ffe7a4; }
+.fossil-cactus-shape { position: relative; display: block; width: 20px; height: 32px; border: 3px solid #315c41; border-radius: 10px 10px 5px 5px; background: #62b77d; }
+.fossil-cactus-shape::before, .fossil-cactus-shape::after { position: absolute; width: 9px; height: 13px; border: 3px solid #315c41; border-bottom: 0; border-radius: 8px 8px 0 0; content: ''; }
+.fossil-cactus-shape::before { top: 8px; left: -9px; border-right: 0; }.fossil-cactus-shape::after { top: 13px; right: -9px; border-left: 0; }
+.fossil-player { position: absolute; bottom: 18px; left: var(--fossil-player-x, 50%); z-index: 3; width: clamp(78px, 12vw, 112px); pointer-events: none; transform: translateX(-50%); transition: left .16s ease-out; }
+.fossil-player .dino-svg { width: 100%; }
+.fossil-controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 15px; }
+.fossil-steer { display: flex; gap: 10px; }
+.fossil-control-button { display: grid; place-items: center; width: 58px; height: 52px; border: 2px solid var(--ink); border-radius: 17px; color: var(--ink); background: #fff4cf; box-shadow: 0 4px 0 rgba(41,37,61,.14); cursor: pointer; font-size: 20px; font-weight: 900; touch-action: manipulation; transition: transform .15s ease, background .15s ease; }
+.fossil-control-button:hover { background: var(--yellow); transform: translateY(-2px); }
+.fossil-control-button:active { transform: translateY(2px); box-shadow: none; }
+.fossil-controls .button { min-height: 48px; }
+.fossil-status { min-height: 26px; margin: 12px 0 0; color: var(--muted); font-family: var(--serif); font-size: clamp(17px, 2vw, 21px); line-height: 1.2; text-align: center; }
+.fossil-hint { display: block; margin-top: 10px; color: var(--quiet); font-size: 10px; line-height: 1.5; text-align: center; }
+.fossil-feedback { position: absolute; top: 17px; right: 18px; left: 18px; z-index: 4; max-width: 540px; margin: 0 auto; padding: 9px 13px; border: 2px solid var(--ink); border-radius: 999px; box-shadow: 4px 5px 0 rgba(41,37,61,.12); font-size: 11px; font-weight: 900; line-height: 1.35; text-align: center; }
+.fossil-feedback-good { background: var(--yellow); }.fossil-feedback-hit { background: var(--peach); }.fossil-feedback-neutral { background: rgba(255,255,255,.86); }
+.fossil-overlay { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; padding: 24px; color: var(--ink); background: rgba(255,253,247,.76); text-align: center; backdrop-filter: blur(3px); }
+.fossil-overlay strong { max-width: 440px; font-family: var(--serif); font-size: clamp(25px, 4vw, 38px); line-height: .98; }
+.fossil-overlay p { max-width: 440px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.fossil-result { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 16px; }
+.fossil-result .button { flex: 0 0 auto; }
+.fossil-game.is-hit .fossil-arena { animation: fossil-bonk .22s ease-in-out 2 alternate; }
+@keyframes fossil-bonk { to { background-color: rgba(237,117,110,.24); } }
+
 .snack-section { background: #fff2d2; }
 .split-section { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(40px, 8vw, 120px); align-items: center; }
 .split-section .section-intro { margin-bottom: 0; }
@@ -311,7 +354,7 @@ img { display: block; max-width: 100%; }
 .back-to-top { position: fixed; right: 20px; bottom: 20px; z-index: 14; display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid var(--ink); border-radius: 50%; color: var(--ink); background: var(--paper); cursor: pointer; box-shadow: 3px 4px 0 rgba(41,37,61,.1); }
 
 @media (max-width: 880px) {
-  .hero-grid, .split-section, .fact-layout, .disco-layout, .chat-layout { grid-template-columns: 1fr; }
+  .hero-grid, .split-section, .fact-layout, .disco-layout, .chat-layout, .fossil-layout { grid-template-columns: 1fr; }
   .hero-copy { max-width: 650px; }
   .hero-dino-card { width: min(620px, 100%); margin: 0 auto; }
   .split-section .section-intro, .fact-layout .section-intro { margin-bottom: 0; }
@@ -319,6 +362,8 @@ img { display: block; max-width: 100%; }
   .fact-card { min-height: 320px; }
   .disco-section .section-intro { margin-bottom: 0; }
   .chat-intro .section-intro { margin-bottom: 0; }
+  .fossil-hud { grid-template-columns: auto minmax(120px, 1fr); }
+  .fossil-hearts { grid-column: 1 / -1; justify-self: end; }
 }
 
 @media (max-width: 760px) {
@@ -354,6 +399,16 @@ img { display: block; max-width: 100%; }
   .bubble-result .button { width: 100%; }
   .bubble-game.is-complete .bubble-arena { min-height: 300px; }
   .bubble-complete-badge { top: 30%; }
+  .fossil-game { padding: 13px; }
+  .fossil-hud { grid-template-columns: 1fr; gap: 8px; }
+  .fossil-hearts { grid-column: auto; justify-self: start; }
+  .fossil-arena { min-height: 390px; height: 62vh; max-height: 490px; border-radius: 16px; }
+  .fossil-player { bottom: 12px; width: 82px; }
+  .fossil-controls { justify-content: space-between; gap: 9px; }
+  .fossil-control-button { flex: 0 0 54px; width: 54px; height: 52px; }
+  .fossil-controls .button { flex: 1; padding-inline: 9px; }
+  .fossil-result { align-items: stretch; flex-direction: column; }
+  .fossil-result .button { width: 100%; }
   .snack-card { min-height: 390px; padding: 23px; }
   .mood-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
   .mood-card { min-height: 190px; padding: 16px; }
@@ -387,4 +442,7 @@ img { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  /* The game loop controls object positions; keep lane changes immediate while
+     retaining the game logic and controls when decorative motion is reduced. */
+  .fossil-player { transition: none !important; }
 }
