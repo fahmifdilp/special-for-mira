@@ -60,10 +60,10 @@ img { display: block; max-width: 100%; }
 .opening-screen { display: grid; place-items: center; isolation: isolate; padding: 90px 22px 70px; background: linear-gradient(180deg, #fff8e9 0%, #f5edff 100%); }
 .opening-sun { position: absolute; top: 11%; left: 50%; width: min(42vw, 380px); aspect-ratio: 1; border-radius: 50%; background: rgba(255,215,107,.42); filter: blur(1px); transform: translateX(-50%); }
 .opening-dino-wrap { position: relative; z-index: 1; width: min(330px, 80vw); margin: -22px auto 8px; }
-.opening-dino-wrap .dino-svg { width: 100%; }
+.opening-dino-wrap .dino-svg { position: relative; z-index: 1; width: 100%; }
 .speech-bubble { position: relative; display: inline-block; padding: 10px 13px; border: 2px solid var(--ink); border-radius: 15px 15px 15px 4px; color: var(--ink); background: var(--paper); box-shadow: 5px 5px 0 rgba(41,37,61,.12); font-size: 12px; font-weight: 800; line-height: 1.25; }
 .speech-bubble::after { position: absolute; left: 18px; bottom: -8px; width: 14px; height: 14px; content: ''; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); background: var(--paper); transform: skewY(35deg) rotate(30deg); }
-.opening-bubble { margin-left: 34px; transform: rotate(-3deg); }
+.opening-bubble { z-index: 2; margin-left: 34px; transform: rotate(-3deg); }
 .opening-copy { position: relative; z-index: 1; display: flex; align-items: center; flex-direction: column; width: min(760px, 94vw); text-align: center; }
 .eyebrow { color: var(--purple); font-size: 10px; font-weight: 900; letter-spacing: .19em; line-height: 1.4; text-transform: uppercase; }
 .opening-copy h1 { max-width: 760px; margin: 16px 0 16px; color: var(--ink); font-family: var(--serif); font-size: clamp(48px, 8vw, 90px); font-weight: 500; letter-spacing: -.07em; line-height: .9; }
@@ -115,12 +115,49 @@ img { display: block; max-width: 100%; }
 .dino-svg .dino-eye-shine { fill: #fff; }
 .dino-svg .dino-mouth, .dino-svg .dino-foot { fill: none; stroke: #29253d; stroke-width: 3; stroke-linecap: round; }
 .dino-svg .dino-cheek { fill: #ff9c9c; opacity: .85; }
+.dino-svg .dino-spot { fill: rgba(255,255,255,.38); stroke: rgba(41,37,61,.16); stroke-width: 1.25; }
+.dino-svg .dino-brow { fill: none; stroke: #29253d; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.dino-svg .dino-nostril { fill: #29253d; stroke: #fffdf7; stroke-width: .7; }
+.dino-svg .dino-toe { fill: #9be0a6; stroke: #29253d; stroke-width: 1.5; stroke-linecap: round; }
+.dino-svg .dino-eye { transform-box: fill-box; transform-origin: center; animation: dino-blink 5.8s ease-in-out infinite; }
 .dino-svg.mood-1 { filter: saturate(.72); }
 .dino-svg.mood-2 .dino-cheek { transform: scale(1.3); transform-origin: center; }
 .dino-svg.mood-4 .dino-spikes { fill: var(--coral); }
 .dino-svg.celebrate .dino-leg { animation: tiny-dance .3s ease-in-out 2 alternate; }
 @keyframes tail-wiggle { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(5deg); } }
 @keyframes tiny-dance { from { transform: translateY(0); } to { transform: translateY(-6px) rotate(3deg); } }
+@keyframes dino-blink { 0%, 93%, 96%, 100% { transform: scaleY(1); } 94.5% { transform: scaleY(.12); } }
+
+/* Opening and hero energy accents: layered behind the character, never on the SVG root. */
+.opening-energy-aura, .hero-energy-aura { position: absolute; z-index: 0; left: 50%; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%); }
+.opening-energy-aura { top: 46%; width: min(74vw, 490px); aspect-ratio: 1; background: radial-gradient(circle, rgba(255,215,107,.44) 0%, rgba(255,176,155,.22) 38%, rgba(120,101,215,.1) 58%, transparent 72%); filter: blur(5px); animation: opening-aura-breathe 5s ease-in-out infinite; }
+.opening-energy-ring { position: absolute; top: 50%; left: 50%; width: min(74vw, 470px); aspect-ratio: 1; border: 1px solid rgba(120,101,215,.2); border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%) scaleY(.7) rotate(-12deg); }
+.opening-energy-ring.ring-one { box-shadow: 0 0 0 14px rgba(255,255,255,.14), inset 0 0 28px rgba(255,176,155,.16); animation: opening-ring-drift 8s ease-in-out infinite alternate; }
+.opening-energy-ring.ring-two { width: min(88vw, 560px); border-style: dashed; border-color: rgba(237,117,110,.22); transform: translate(-50%, -50%) scaleY(.56) rotate(16deg); animation: opening-ring-drift 11s ease-in-out infinite alternate-reverse; }
+.opening-energy-particles { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.opening-energy-particles span { position: absolute; top: var(--particle-y, 50%); left: var(--particle-x, 50%); width: var(--particle-size, 7px); height: var(--particle-size, 7px); border: 1px solid rgba(41,37,61,.12); border-radius: 50%; background: var(--particle-color, var(--yellow)); box-shadow: 0 0 16px rgba(255,215,107,.35); animation: opening-particle-float 5s ease-in-out var(--particle-delay, 0s) infinite alternate; }
+@keyframes opening-aura-breathe { 0%, 100% { opacity: .72; transform: translate(-50%, -50%) scale(.94); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
+@keyframes opening-ring-drift { from { opacity: .48; translate: 0 4px; } to { opacity: .9; translate: 0 -5px; } }
+@keyframes opening-particle-float { from { opacity: .35; translate: 0 6px; } to { opacity: .9; translate: 0 -10px; } }
+
+.hero-dino-card { isolation: isolate; }
+.hero-energy-aura { top: 54%; width: min(75%, 350px); aspect-ratio: 1; background: radial-gradient(circle, rgba(255,215,107,.54), rgba(255,176,155,.26) 40%, rgba(255,255,255,.06) 63%, transparent 72%); filter: blur(4px); animation: opening-aura-breathe 4.5s ease-in-out infinite; }
+.hero-dino-card .dino-card-label { z-index: 3; }
+.hero-power-badge { position: absolute; top: 21px; right: 22px; z-index: 4; display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1.5px solid var(--ink); border-radius: 999px; color: var(--ink); background: rgba(255,248,233,.88); box-shadow: 3px 4px 0 rgba(41,37,61,.13); font-size: 8px; font-weight: 1000; letter-spacing: .12em; text-transform: uppercase; }
+.hero-power-badge::before { width: 7px; height: 7px; border-radius: 50%; content: ''; background: var(--coral); box-shadow: 0 0 0 3px rgba(237,117,110,.15); }
+.hero-dino-card.is-powered { background: linear-gradient(145deg, #9bdcff, #d9e8ff 52%, #ffe0b9); box-shadow: 10px 12px 0 rgba(41,37,61,.14), 0 0 35px rgba(255,200,74,.2); }
+.hero-dino-card.is-powered .hero-energy-aura { background: radial-gradient(circle, rgba(255,215,107,.7), rgba(255,176,155,.34) 42%, rgba(120,101,215,.12) 62%, transparent 74%); }
+.hero-dino-card.is-powered .hero-power-badge { background: var(--yellow); box-shadow: 0 0 18px rgba(255,215,107,.45), 3px 4px 0 rgba(41,37,61,.13); }
+@media (max-width: 580px) {
+  .opening-energy-aura { top: 39%; width: min(92vw, 360px); }
+  .opening-energy-ring { width: min(90vw, 350px); }
+  .opening-energy-ring.ring-two { width: min(100vw, 410px); }
+  .hero-energy-aura { width: min(84%, 300px); }
+  .hero-power-badge { top: 16px; right: 15px; padding: 6px 8px; font-size: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-energy-aura, .opening-energy-ring, .opening-energy-particles span, .hero-energy-aura, .dino-svg .dino-eye { animation: none !important; }
+}
 
 .dash-section { background: #dff1ff; }
 .dash-card, .playful-card { border: 2px solid var(--ink); border-radius: 25px; background: var(--paper); box-shadow: 9px 10px 0 rgba(41,37,61,.12); }

@@ -204,8 +204,21 @@ function OpeningScreen({ onStart }) {
         animate={{ opacity: 1, y: 0, rotate: 0 }}
         transition={{ duration: reducedMotion ? 0 : 0.8 }}
       >
-        <div className="speech-bubble opening-bubble">halo. aku dino.</div>
-        <DinoSvg mood="idle" celebrate />
+        <div className="opening-energy-aura" aria-hidden="true" />
+        <div className="opening-energy-ring ring-one" aria-hidden="true" /><div className="opening-energy-ring ring-two" aria-hidden="true" />
+        <div className="opening-energy-particles" aria-hidden="true">
+          {Array.from({ length: 10 }, (_, index) => (
+            <span key={index} style={{
+              '--particle-x': `${12 + (index * 37) % 77}%`,
+              '--particle-y': `${9 + (index * 29) % 76}%`,
+              '--particle-size': `${5 + (index % 3) * 2}px`,
+              '--particle-delay': `${index * .16}s`,
+              '--particle-color': index % 2 ? 'var(--peach)' : 'var(--yellow)',
+            }} />
+          ))}
+        </div>
+        <div className="speech-bubble opening-bubble">halo. aku dino versi upgrade.</div>
+        <DinoSvg mood="idle" celebrate power="ready" />
       </motion.div>
       <motion.div
         className="opening-copy"
@@ -336,6 +349,7 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
   }, [dashScore, showToast])
 
   const dinoStatus = content.hero.statuses[Math.min(dinoMood, content.hero.statuses.length - 1)]
+  const heroPower = tapCount >= 5 ? 'mega' : tapCount >= 2 ? 'charging' : 'ready'
 
   const tapDino = () => {
     const nextCount = tapCount + 1
@@ -495,17 +509,20 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
                 <button className="button button-primary" onClick={tapDino}><Zap size={16} /> {dinoJumping ? 'Boing!' : content.hero.roarButton}</button>
                 <button className="button button-soft" onClick={toggleDance}>{danceMode ? 'Stop joget' : 'Bikin dino joget'} <Sparkles size={15} /></button>
                 <button className="button button-outline" onClick={() => document.getElementById('dash')?.scrollIntoView({ behavior: 'smooth' })}>{content.hero.nextButton} <ArrowRight size={16} /></button>
+                <button className="button button-dark" onClick={() => document.getElementById('dino-power')?.scrollIntoView({ behavior: 'smooth' })}><Zap size={16} /> Coba Super Mode</button>
               </div>
               <div className="hero-stats">
                 <span>{content.hero.tapCount.replace('{count}', tapCount)}</span>
                 <span>{content.hero.status.replace('{status}', dinoStatus)}</span>
               </div>
             </motion.div>
-            <motion.div className="hero-dino-card" initial={{ opacity: 0, scale: .92, rotate: 2 }} whileInView={{ opacity: 1, scale: 1, rotate: 0 }} viewport={viewport} transition={{ duration: .7 }}>
-              <div className="dino-card-label">DINO CAM / LIVE</div>
+            <motion.div className={`hero-dino-card ${tapCount >= 5 ? 'is-powered' : ''}`} initial={{ opacity: 0, scale: .92, rotate: 2 }} whileInView={{ opacity: 1, scale: 1, rotate: 0 }} viewport={viewport} transition={{ duration: .7 }}>
+              <div className="hero-energy-aura" aria-hidden="true"><i /><i /><i /></div>
+              <div className="dino-card-label">DINO V2 / LIVE</div>
+              <div className="hero-power-badge"><Zap size={12} /> {tapCount >= 5 ? 'SUPER MODE' : 'UPGRADE READY'}</div>
               <div className="speech-bubble">{personalize(speech)}</div>
               <AnimatePresence>{dinoJumping && <motion.span className="jump-burst" initial={{ opacity: 0, scale: .5, rotate: -12 }} animate={{ opacity: 1, scale: 1, rotate: 8 }} exit={{ opacity: 0, scale: 1.2 }} transition={{ duration: .2 }}>BOING!</motion.span>}</AnimatePresence>
-              <DinoSvg mood={dinoMood} jumping={dinoJumping} dancing={danceMode} celebrate={celebrate > 0} />
+              <DinoSvg mood={dinoMood} jumping={dinoJumping} dancing={danceMode} celebrate={celebrate > 0} power={heroPower} />
               <button className="star-button" onClick={revealStar} aria-label="Bintang kecil rahasia"><Star size={15} fill={starFound ? 'currentColor' : 'none'} /></button>
               <div className="dino-ground" />
             </motion.div>
@@ -1361,16 +1378,20 @@ function DinoSvg({ mood = 0, celebrate = false, jumping = false, dancing = false
       <g className="dino-tail"><path d="M92 114 C62 104 43 119 27 139 C48 140 76 136 101 126Z" /></g>
       <path className="dino-spikes" d="M93 78 L104 49 L115 74 L130 41 L139 75 L157 49 L162 87Z" />
       <path className="dino-body" d="M77 83 C77 67 92 58 115 58 H158 C178 58 192 72 192 94 V126 C192 141 180 151 161 151 H106 C87 151 77 139 77 123Z" />
+      <circle className="dino-spot" cx="101" cy="91" r="5" /><circle className="dino-spot" cx="91" cy="112" r="3.8" /><circle className="dino-spot" cx="116" cy="127" r="4.6" />
       <path className="dino-head" d="M126 43 C126 25 140 17 160 18 H190 C210 18 225 31 225 49 V70 C225 86 214 96 197 96 H157 C139 96 126 78 126 62Z" />
       {['mega', 'overload'].includes(power) && <path className="dino-bolt-crown" d="M150 25 L158 4 L169 17 L182 2 L188 27 L171 20Z" />}
       <path className="dino-belly" d="M113 87 C113 78 122 72 135 72 H158 C171 72 179 80 179 92 V127 C179 136 171 141 159 141 H134 C122 141 113 134 113 124Z" />
       <path className="dino-leg leg-back" d="M92 127 H117 V157 C117 164 110 168 101 168 H91 C86 168 83 164 86 158Z" />
       <path className="dino-leg" d="M154 130 H178 V157 C178 164 171 168 162 168 H152 C147 168 145 164 148 158Z" />
       <path className="dino-arm" d="M179 100 C198 96 204 107 197 117 C192 124 184 121 180 116Z" />
-      <circle className="dino-eye" cx="193" cy="48" r="6" /><circle className="dino-eye-shine" cx="195" cy="46" r="2" />
+      <path className="dino-brow" d="M184 38 Q193 33 202 38" />
+      <g className="dino-eye"><circle cx="193" cy="48" r="6" /><circle className="dino-eye-shine" cx="195" cy="46" r="2" /></g>
+      <circle className="dino-nostril" cx="216" cy="43" r="2" />
       <path className="dino-mouth" d="M188 67 C196 73 204 72 210 66" />
       <circle className="dino-cheek" cx="213" cy="59" r="5" />
       <path className="dino-foot" d="M87 168 H119 M148 168 H180" />
+      <path className="dino-toe" d="M94 167 L90 174 L98 170 Z M105 167 L102 174 L110 170 Z M157 167 L153 174 L161 170 Z M168 167 L165 174 L173 170 Z" />
     </motion.svg>
   )
 }

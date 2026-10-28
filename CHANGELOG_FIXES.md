@@ -1,3 +1,17 @@
+### Fix #8 - Dino Upgrade Tidak Terlihat di Halaman Awal
+
+| Field | Detail |
+| --- | --- |
+| Tanggal | 2026-10-29 |
+| File | `src/App.jsx`, `src/index.css` |
+| Masalah | Website terasa tetap sama walaupun Dino Power Lab sudah ditambahkan. |
+| Akar | Fitur baru berada jauh di bagian bawah halaman, sedangkan Dino pada opening dan hero masih memakai presentasi lama sehingga perubahan utama tidak langsung terlihat. |
+| Fix | Opening kini menampilkan Dino versi upgrade dengan aura, orbit, partikel, cape, dan detail wajah/tubuh baru. Hero menampilkan label `DINO V2 / LIVE`, status power, efek charging, crown dan `SUPER MODE` setelah 5 tap, serta tombol langsung ke Power Lab. |
+| Verifikasi | Smoke-test Chrome lokal mendeteksi cape, 3 spot, eyebrow, 10 partikel, dan aktivasi `SUPER MODE` setelah 5 tap. Viewport 390x844 tidak overflow dan tidak menghasilkan runtime error. `npm.cmd run lint` lulus; `npm.cmd run build` lulus dengan 1.929 module. |
+| Pelajaran | Upgrade besar harus terlihat sejak layar pertama; fitur yang hanya ditambahkan jauh di bawah fold mudah dianggap belum berubah. |
+| Log Keyword | `dino-v2`, `opening-upgrade`, `super-mode`, `power-lab-shortcut`, `special-for-mira` |
+| Deploy | BELUM DEPLOY |
+
 ### Fix #7 - Pembuka Selalu Kembali ke Bagian Atas
 
 | Field | Detail |
