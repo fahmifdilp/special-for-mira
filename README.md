@@ -60,6 +60,7 @@ Use the Bubble Break `Isi gelembung lagi` button after all bubbles are popped to
 - Fossil Run: a three-lane runner with keyboard, tap, swipe, fossils, snacks, cacti, and three chances
 - Snack Station: feed the dino five times
 - Mood cards with funny responses
+- Dino Power Lab: hold-and-release charging with four outcomes, sound, particles, cape, and lightning crown
 - Dino Dengerin: concise AI companion chat with per-tab history
 - Dino Disco with selectable Wiggle, Muter, and Zoomies dance moves
 - Random dino fact machine

@@ -42,6 +42,7 @@ const viewport = { once: true, amount: 0.2 }
 
 const FOSSIL_TARGET = 8
 const FOSSIL_MAX_HEARTS = 3
+const POWER_CHARGE_MS = 2700
 const FOSSIL_WAVES = [
   [{ lane: 0, type: 'fossil' }, { lane: 2, type: 'cactus' }],
   [{ lane: 1, type: 'fossil' }, { lane: 0, type: 'cactus' }],
@@ -88,6 +89,64 @@ function playOpeningSound() {
     window.setTimeout(() => void context.close().catch(() => {}), 1100)
   } catch {
     // Audio is optional; the experience should still open when it is unavailable.
+  }
+}
+
+function playPowerSound(tier) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext
+  if (!AudioContextClass) return
+
+  const noteSets = {
+    tiny: [240, 285],
+    ready: [260, 390, 520],
+    mega: [220, 440, 660, 880],
+    overload: [780, 610, 410, 250],
+  }
+
+  try {
+    const context = new AudioContextClass()
+    const now = context.currentTime
+    const master = context.createGain()
+    master.gain.setValueAtTime(0.0001, now)
+    master.gain.exponentialRampToValueAtTime(tier === 'mega' ? 0.16 : 0.11, now + 0.025)
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.05)
+    master.connect(context.destination)
+
+    noteSets[tier].forEach((frequency, index) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const start = now + index * 0.105
+      oscillator.type = tier === 'overload' ? 'sawtooth' : index % 2 ? 'sine' : 'triangle'
+      oscillator.frequency.setValueAtTime(frequency, start)
+      gain.gain.setValueAtTime(0.0001, start)
+      gain.gain.exponentialRampToValueAtTime(0.45, start + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.25)
+      oscillator.connect(gain)
+      gain.connect(master)
+      oscillator.start(start)
+      oscillator.stop(start + 0.28)
+    })
+
+    if (tier === 'mega') {
+      const roar = context.createOscillator()
+      const roarGain = context.createGain()
+      roar.type = 'square'
+      roar.frequency.setValueAtTime(115, now + 0.32)
+      roar.frequency.exponentialRampToValueAtTime(72, now + 0.92)
+      roarGain.gain.setValueAtTime(0.0001, now + 0.32)
+      roarGain.gain.exponentialRampToValueAtTime(0.18, now + 0.38)
+      roarGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.96)
+      roar.connect(roarGain)
+      roarGain.connect(master)
+      roar.start(now + 0.32)
+      roar.stop(now + 1)
+    }
+
+    void context.resume().catch(() => {})
+    window.setTimeout(() => void context.close().catch(() => {}), 1400)
+    if ('vibrate' in navigator) navigator.vibrate(tier === 'mega' ? [35, 25, 70] : tier === 'overload' ? [25, 20, 25] : 25)
+  } catch {
+    // The visual power-up still works when browser audio or vibration is unavailable.
   }
 }
 
@@ -491,6 +550,8 @@ function DinoExperience({ onReplay, initialAudio, initialMusicPromise }) {
           </div>
         </section>
 
+        <DinoPowerSection initialMood={dinoMood} />
+
         <DinoChatSection
           messages={chatMessages}
           input={chatInput}
@@ -543,7 +604,7 @@ function TopBar({ musicOn, onToggleMusic, onLogo }) {
     <header className="dino-topbar">
       <button className="dino-wordmark" onClick={onLogo} aria-label="Dino Break"><span className="wordmark-dot" />dino break<span className="wordmark-plus">+</span></button>
       <nav className="dino-nav" aria-label="Dino sections">
-        <a href="#dash">Dash</a><a href="#bubbles">Pop</a><a href="#fossil-run">Fosil</a><a href="#snacks">Snack</a><a href="#moods">Mood</a><a href="#curhat">Cerita</a><a href="#disco">Disco</a><a href="#facts">Facts</a>
+        <a href="#dash">Dash</a><a href="#bubbles">Pop</a><a href="#fossil-run">Fosil</a><a href="#snacks">Snack</a><a href="#moods">Mood</a><a href="#dino-power">Power</a><a href="#curhat">Cerita</a><a href="#disco">Disco</a><a href="#facts">Facts</a>
       </nav>
       <button className="music-toggle" onClick={onToggleMusic} aria-label={musicOn ? content.music.off : content.music.on}>{musicOn ? <Pause size={14} /> : <Music2 size={14} />}<span>{content.music.label}</span></button>
     </header>
@@ -1021,6 +1082,169 @@ function FossilRunSection() {
   )
 }
 
+function DinoPowerSection({ initialMood }) {
+  const [charge, setCharge] = useState(0)
+  const [charging, setCharging] = useState(false)
+  const [result, setResult] = useState(null)
+  const [status, setStatus] = useState(content.dinoPower.idle)
+  const reducedMotion = useReducedMotion()
+  const frameRef = useRef(null)
+  const startedAtRef = useRef(0)
+  const chargeRef = useRef(0)
+  const chargingRef = useRef(false)
+  const particles = useMemo(() => Array.from({ length: 18 }, (_, index) => ({
+    angle: `${index * 20}deg`,
+    delay: `${(index % 6) * .07}s`,
+    distance: `${95 + (index % 4) * 24}px`,
+  })), [])
+
+  const finishCharge = useCallback((finalCharge = chargeRef.current) => {
+    if (!chargingRef.current) return
+    chargingRef.current = false
+    window.cancelAnimationFrame(frameRef.current)
+    const safeCharge = Math.max(0, Math.min(100, Math.round(finalCharge)))
+    chargeRef.current = safeCharge
+    setCharge(safeCharge)
+    setCharging(false)
+
+    let tier
+    if (safeCharge < 30) tier = 'tiny'
+    else if (safeCharge < 62) tier = 'ready'
+    else if (safeCharge <= 78) tier = 'mega'
+    else tier = 'overload'
+
+    const nextResult = {
+      tier,
+      title: content.dinoPower[`${tier}Title`],
+      message: content.dinoPower[`${tier}Message`],
+    }
+    setResult(nextResult)
+    setStatus(nextResult.message)
+    playPowerSound(tier)
+  }, [])
+
+  const startCharge = useCallback(() => {
+    if (chargingRef.current) return
+    chargingRef.current = true
+    chargeRef.current = 0
+    startedAtRef.current = performance.now()
+    setCharge(0)
+    setResult(null)
+    setCharging(true)
+    setStatus(content.dinoPower.charging)
+
+    const tick = (now) => {
+      if (!chargingRef.current) return
+      const nextCharge = Math.min(100, ((now - startedAtRef.current) / POWER_CHARGE_MS) * 100)
+      chargeRef.current = nextCharge
+      setCharge(nextCharge)
+      if (nextCharge >= 100) finishCharge(100)
+      else frameRef.current = window.requestAnimationFrame(tick)
+    }
+
+    frameRef.current = window.requestAnimationFrame(tick)
+  }, [finishCharge])
+
+  const releaseCharge = useCallback(() => finishCharge(chargeRef.current), [finishCharge])
+
+  useEffect(() => () => {
+    chargingRef.current = false
+    window.cancelAnimationFrame(frameRef.current)
+  }, [])
+
+  const handleKeyDown = (event) => {
+    if (![' ', 'Enter'].includes(event.key) || event.repeat) return
+    event.preventDefault()
+    startCharge()
+  }
+
+  const handleKeyUp = (event) => {
+    if (![' ', 'Enter'].includes(event.key)) return
+    event.preventDefault()
+    releaseCharge()
+  }
+
+  const tier = charging ? 'charging' : result?.tier || 'idle'
+  const powerMode = charging ? 'charging' : result?.tier || 'normal'
+  const buttonLabel = charging ? content.dinoPower.charging : result ? content.dinoPower.retry : content.dinoPower.hold
+  const dinoAnimation = charging
+    ? { y: [0, -5, 0], scale: 1 + charge / 600, rotate: [0, -1.5, 1.5, 0] }
+    : result?.tier === 'mega'
+      ? { y: [0, -32, -14], scale: [.92, 1.24, 1.08], rotate: [0, -4, 3, 0] }
+      : result?.tier === 'overload'
+        ? { x: [0, -8, 8, -6, 6, 0], y: [0, -10, 0], rotate: [0, -8, 8, -5, 0] }
+        : result?.tier === 'ready'
+          ? { y: [0, -17, 0], scale: [1, 1.1, 1] }
+          : result?.tier === 'tiny'
+            ? { y: [0, -5, 0], rotate: [0, -2, 0] }
+            : { y: 0, scale: 1, rotate: 0 }
+
+  return (
+    <section id="dino-power" className="dino-section power-section">
+      <div className="section-inner power-layout">
+        <motion.div initial="hidden" whileInView="visible" viewport={viewport} variants={fadeUp}>
+          <SectionIntro eyebrow={content.dinoPower.kicker} title={content.dinoPower.title} intro={content.dinoPower.intro} />
+          <div className="power-tip"><Zap size={15} /> {content.dinoPower.hint}</div>
+        </motion.div>
+
+        <div className={`power-card playful-card ${charging ? 'is-charging' : ''} power-tier-${tier}`}>
+          <div className="power-stage">
+            <div className="power-grid" aria-hidden="true" />
+            <div className="power-orbit orbit-one" aria-hidden="true" /><div className="power-orbit orbit-two" aria-hidden="true" />
+            {(result?.tier === 'mega' || result?.tier === 'overload') && <><div className="power-shockwave wave-one" aria-hidden="true" /><div className="power-shockwave wave-two" aria-hidden="true" /></>}
+            <div className="power-particles" aria-hidden="true">
+              {particles.map((particle, index) => <span key={index} style={{ '--power-angle': particle.angle, '--power-delay': particle.delay, '--power-distance': particle.distance }} />)}
+            </div>
+
+            <motion.div
+              className="power-dino"
+              animate={reducedMotion ? { y: 0, x: 0, rotate: 0, scale: result?.tier === 'mega' ? 1.08 : 1 } : dinoAnimation}
+              transition={charging
+                ? { duration: .38, repeat: Infinity, ease: 'easeInOut' }
+                : { duration: result?.tier === 'mega' ? .85 : .52, ease: 'easeOut' }}
+            >
+              <DinoSvg mood={result?.tier === 'overload' ? 2 : result?.tier === 'mega' ? 4 : initialMood} power={powerMode} />
+            </motion.div>
+
+            <AnimatePresence mode="wait">
+              {result && (
+                <motion.div key={result.tier} className="power-result" initial={{ opacity: 0, y: 18, scale: .9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }}>
+                  <span>{Math.round(charge)}% POWER</span>
+                  <div><h3>{result.title}</h3><p>{result.message}</p></div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="power-console">
+            <div className="power-meter" role="progressbar" aria-label="Dino power" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(charge)}>
+              <span className="power-meter-fill" style={{ width: `${charge}%` }} />
+              <span className="power-target-zone" aria-label={content.dinoPower.target} />
+            </div>
+            <div className="power-meter-labels" aria-hidden="true"><span>baby roar</span><span>super zone</span><span>chaos</span></div>
+            <button
+              type="button"
+              className="power-hold-button"
+              onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); startCharge() }}
+              onPointerUp={releaseCharge}
+              onPointerCancel={releaseCharge}
+              onKeyDown={handleKeyDown}
+              onKeyUp={handleKeyUp}
+              onBlur={releaseCharge}
+              aria-pressed={charging}
+            >
+              <Zap size={21} fill={charging ? 'currentColor' : 'none'} />
+              <span>{buttonLabel}</span>
+              <small>{charging ? `${Math.round(charge)}%` : 'hold + release'}</small>
+            </button>
+            <p className="power-status" aria-live="polite">{status}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function DinoChatSection({ messages, input, busy, endRef, transcriptRef, onInput, onSubmit, onKeyDown, onPrompt }) {
   const reducedMotion = useReducedMotion()
 
@@ -1116,7 +1340,7 @@ function DiscoSection() {
   )
 }
 
-function DinoSvg({ mood = 0, celebrate = false, jumping = false, dancing = false }) {
+function DinoSvg({ mood = 0, celebrate = false, jumping = false, dancing = false, power = 'normal' }) {
   const motionState = jumping
     ? { y: [0, -32, 0], rotate: [0, -5, 4, 0] }
     : dancing
@@ -1132,11 +1356,13 @@ function DinoSvg({ mood = 0, celebrate = false, jumping = false, dancing = false
         ? { duration: .65 }
         : undefined
   return (
-    <motion.svg className={`dino-svg mood-${mood} ${celebrate ? 'celebrate' : ''} ${jumping ? 'jumping' : ''} ${dancing ? 'dancing' : ''}`} viewBox="0 0 260 190" role="img" aria-label="Dino kecil yang lucu" animate={motionState} transition={motionTransition}>
+    <motion.svg className={`dino-svg mood-${mood} power-${power} ${celebrate ? 'celebrate' : ''} ${jumping ? 'jumping' : ''} ${dancing ? 'dancing' : ''}`} viewBox="0 0 260 190" role="img" aria-label={power === 'normal' ? 'Dino kecil yang lucu' : 'Dino sedang mengisi kekuatan'} animate={motionState} transition={motionTransition}>
+      {['ready', 'mega', 'overload'].includes(power) && <path className="dino-cape" d="M105 68 C68 72 48 101 29 151 C58 141 83 137 116 129 L127 79Z" />}
       <g className="dino-tail"><path d="M92 114 C62 104 43 119 27 139 C48 140 76 136 101 126Z" /></g>
       <path className="dino-spikes" d="M93 78 L104 49 L115 74 L130 41 L139 75 L157 49 L162 87Z" />
       <path className="dino-body" d="M77 83 C77 67 92 58 115 58 H158 C178 58 192 72 192 94 V126 C192 141 180 151 161 151 H106 C87 151 77 139 77 123Z" />
       <path className="dino-head" d="M126 43 C126 25 140 17 160 18 H190 C210 18 225 31 225 49 V70 C225 86 214 96 197 96 H157 C139 96 126 78 126 62Z" />
+      {['mega', 'overload'].includes(power) && <path className="dino-bolt-crown" d="M150 25 L158 4 L169 17 L182 2 L188 27 L171 20Z" />}
       <path className="dino-belly" d="M113 87 C113 78 122 72 135 72 H158 C171 72 179 80 179 92 V127 C179 136 171 141 159 141 H134 C122 141 113 134 113 124Z" />
       <path className="dino-leg leg-back" d="M92 127 H117 V157 C117 164 110 168 101 168 H91 C86 168 83 164 86 158Z" />
       <path className="dino-leg" d="M154 130 H178 V157 C178 164 171 168 162 168 H152 C147 168 145 164 148 158Z" />
