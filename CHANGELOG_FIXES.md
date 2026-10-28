@@ -10,7 +10,7 @@
 | Verifikasi | Smoke-test Chrome lokal mendeteksi cape, 3 spot, eyebrow, 10 partikel, dan aktivasi `SUPER MODE` setelah 5 tap. Viewport 390x844 tidak overflow dan tidak menghasilkan runtime error. `npm.cmd run lint` lulus; `npm.cmd run build` lulus dengan 1.929 module. |
 | Pelajaran | Upgrade besar harus terlihat sejak layar pertama; fitur yang hanya ditambahkan jauh di bawah fold mudah dianggap belum berubah. |
 | Log Keyword | `dino-v2`, `opening-upgrade`, `super-mode`, `power-lab-shortcut`, `special-for-mira` |
-| Deploy | BELUM DEPLOY |
+| Deploy | ✅ LIVE 2026-10-29 — `https://special-for-mira.vercel.app/` (deployment `dpl_FWAeS3xRPoupwpYoxbk89aeufs1N`) |
 
 ### Fix #7 - Pembuka Selalu Kembali ke Bagian Atas
 
